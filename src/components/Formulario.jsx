@@ -1,6 +1,7 @@
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import styled from "@emotion/styled";
 import useSelectMonedas from "../hooks/useSelectMonedas"
+import Error from "./Error";
 import { monedas } from '../data/monedas'
 
 const InputSubmit = styled.input`
@@ -21,27 +22,56 @@ const InputSubmit = styled.input`
     }
 `
 
-const Formulario = () => {
+const Formulario = ({setMonedas}) => {
 
-    const [state, SelectMonedas] = useSelectMonedas('Elige tu Moneda', monedas);
+    const [cryptos, setCryptos] = useState([])
+    const [error, setError] = useState(false)
+
+    const [moneda, SelectMonedas] = useSelectMonedas('Elige tu Moneda', monedas)
+    const [criptomoneda, SelectCriptomoneda] = useSelectMonedas('Elige tu Criptomoneda', cryptos)
     
     useEffect(()=>{
         const consultarApi = async ()=>{
             const url = 'https://min-api.cryptocompare.com/data/top/mktcapfull?limit=10&tsym=USD'
-
             const respuesta = await fetch(url)
             const resultado = await respuesta.json()
-            console.log(resultado.Data);
+            const arrayCryptos = resultado.Data.map(crypto => {
+                const objeto = {
+                    id: crypto.CoinInfo.Name,
+                    nombre:crypto.CoinInfo.FullName
+                }
+                return objeto
+            })
+            setCryptos(arrayCryptos)
         }
         consultarApi()
     }, [])
     
+    const handleSubmit = e => {
+        e.preventDefault()
+
+        if([moneda,criptomoneda].includes('')){
+            setError(true)
+            return
+        }
+        setError(false)
+        setMonedas({
+            moneda,
+            criptomoneda
+        })
+    }
+
     return ( 
-        <form>
-            <SelectMonedas />
-            {state}
-            <InputSubmit type="submit" value='Cotizar' />
-        </form>
+        <>
+            {error && <Error>Todos los campos son obligatorios</Error>}
+            <form
+                onSubmit={handleSubmit}
+            >
+                <SelectMonedas />
+                <SelectCriptomoneda/>
+                <InputSubmit type="submit" value='Cotizar' />
+            </form>
+        </>
      );
 }
  
